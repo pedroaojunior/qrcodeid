@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Confraternização SAELCE</title>
+    <!-- Cliente Oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f6f9; color: #333; text-align: center; }
+        .dashboard { display: flex; gap: 20px; justify-content: center; margin: 40px 0; flex-wrap: wrap; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 220px; }
+        .number { font-size: 48px; font-weight: bold; margin: 10px 0; }
+        .card.almoco .number { color: #2ecc71; }
+        .card.cerveja .number { color: #e74c3c; }
+        .btn { background: #3498db; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 6px; cursor: pointer; margin: 5px; }
+        .btn:hover { background: #2980b9; }
+        .status-atualizacao { font-size: 13px; color: #7f8c8d; margin-top: 15px; }
+        @media print { .btn, .status-atualizacao { display: none; } }
+    </style>
+</head>
+<body>
+    <h1>📊 Painel de Consumo em Tempo Real</h1>
+    <p>Confraternização de Fim de Ano - SAELCE</p>
+
+    <div class="dashboard">
+        <div class="card almoco">
+            <h3>Almoços Liberados</h3>
+            <div class="number" id="total-almoco">...</div>
+        </div>
+        <div class="card cerveja">
+            <h3>Cervejas Consumidas</h3>
+            <div class="number" id="total-cerveja">...</div>
+        </div>
+    </div>
+
+    <button class="btn" onclick="atualizarTotais()">🔄 Atualizar Agora</button>
+    <button class="btn" onclick="window.print()">🖨️ Encerrar e Imprimir</button>
+
+    <div class="status-atualizacao" id="ultimo-status">Carregando dados...</div>
+
+    <script>
+        // ========================================================
+        // 1. CONFIGURAÇÃO DO SUPABASE
+        // Substitua pelas suas chaves (as mesmas do index.html)
+        // ========================================================
+        const SUPABASE_URL = "https://xgbhzhkvfagpmyhmzwuk.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnYmh6aGt2ZmFncG15aG16d3VrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MjkyMTcsImV4cCI6MjA5NjEwNTIxN30.ROMcYDStFJVUlZzFVTEizu8xXTeQjPF0IZDJeRe4s_8";
+
+
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ========================================================
+        // 2. FUNÇÃO DE CONTAGEM OTIMIZADA
+        // ========================================================
+        async function atualizarTotais() {
+            const statusElem = document.getElementById("ultimo-status");
+            statusElem.innerText = "Atualizando contagem...";
+
+            try {
+                // Contagem ultra-leve da tabela 'almoco' (HEAD query)
+                const { count: almocoCount, error: errAlmoco } = await _supabase
+                    .from('almoco')
+                    .select('*', { count: 'exact', head: true });
+
+                if (errAlmoco) throw errAlmoco;
+
+                // Contagem ultra-leve da tabela 'cerveja' (HEAD query)
+                const { count: cervejaCount, error: errCerveja } = await _supabase
+                    .from('cerveja')
+                    .select('*', { count: 'exact', head: true });
+
+                if (errCerveja) throw errCerveja;
+
+                // Atualiza na tela os valores retornados
+                document.getElementById("total-almoco").innerText = almocoCount ?? 0;
+                document.getElementById("total-cerveja").innerText = cervejaCount ?? 0;
+
+                const horaAtual = new Date().toLocaleTimeString('pt-BR');
+                statusElem.innerText = `Atualizado automaticamente às ${horaAtual} (Próxima em 1 min)`;
+
+            } catch (error) {
+                console.error("Erro ao buscar contagens:", error);
+                statusElem.innerText = "❌ Erro ao atualizar os totais. Verifique a conexão.";
+            }
+        }
+
+        // Carrega imediatamente ao abrir a página
+        atualizarTotais();
+
+        // Atualiza AUTOMATICAMENTE a cada 1 minuto (60.000 ms)
+        setInterval(atualizarTotais, 60000);
+    </script>
+</body>
+</html>
